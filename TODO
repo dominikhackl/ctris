@@ -1,0 +1,7 @@
+TODO
+====
+
+- SIGWINCH handler (allow resizing of the xterm)
+- highscore date
+- time counter
+

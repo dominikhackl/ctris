@@ -1,0 +1,9 @@
+INSTALLATION
+============
+
+Installing ctris is very easy, all you have to do is this:
+
+make
+su -
+make install
+
