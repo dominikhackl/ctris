@@ -66,23 +66,76 @@ void calc_level(const unsigned int score, char *level)
 	}
 }
 
+void pause_game()
+{
+        game_engine(true);
+}
+
 unsigned int start_game()
 {
-	char brick_type, next_brick_type, cur_brick[4][4], name[40], board[BOARD_HEIGHT][BOARD_WIDTH], run, level = 1;
+        return game_engine(false);
+}
+
+unsigned int game_engine(bool resize)
+{
+	static char brick_type, next_brick_type, name[40], cur_brick[4][4], board[BOARD_HEIGHT][BOARD_WIDTH], level = 1;
+	char run;
 	unsigned int score = 0;
-	unsigned char x, y;
-	WINDOW *board_win, *preview_win, *score_win;
+    static unsigned long time = 0L;
+    unsigned int tick = 0;
+	static unsigned char x, y;
+	static WINDOW *board_win, *preview_win, *score_win;
+    static bool engine_stop = false;
+
 	show_headline();
+        
+    if (resize) {
+        if (game_state != PAUSED_STATE) {
+            // if the game engine is in the RUNING_STATE then
+            // the resize call below will switch the engine to PAUSED_STATE
+            
+            // if the game is in the QUIT_STATE then
+            // the call below will simulate a key being pressed
+            // and that will force the highscore screen or play_again dialog to be refreshed
+            put_key('p');
+        }
+
+    	if (game_state == QUIT_STATE)
+        {
+            // if the game is in the highscore screen then refresh it upon resize
+            if (!engine_stop) {
+                show_highscore(name);
+            }
+        }
+        else
+        {
+            // here we will only have RUNNING_STATE, PAUSED_STATE or GAME_OVER_STATE
+            // both states coresponds to the main screen so
+            // the main screen will be refreshed upon resize
+            show_score(score_win, score, level, time);
+            show_brick_preview(preview_win, next_brick_type);
+            show_board_win(board_win, board, cur_brick, brick_type, x, y);
+            if (game_state == PAUSED_STATE) {
+                    show_pause(board_win);
+            }
+            else if (game_state == GAME_OVER_STATE) {
+                    show_game_over(board_win);
+            }
+        }
+        return score;
+    }
+    
+    engine_stop = false;
 	board_win = (WINDOW *)create_board_win();
 	preview_win = (WINDOW *)create_preview_win();
 	score_win = (WINDOW *)create_score_win();
 	init_board(board);
-	show_score(score_win, score, level);
+	show_score(score_win, score, level, time);
 	next_brick_type = get_rand(7) + 1;
-	quit = 2;
+	game_state = PAUSED_STATE;
 	wait_for_start(board_win);
-	quit = 0;
-	while(quit == 0)
+	game_state = RUNNING_STATE;
+	while(game_state == RUNNING_STATE)
 	{
 		brick_type = next_brick_type;
 		next_brick_type = get_rand(7) + 1;
@@ -91,7 +144,7 @@ unsigned int start_game()
 		x = BOARD_WIDTH / 2;
 		y = 0;
 		run = 1;
-		while(quit == 0)
+		while(game_state == RUNNING_STATE)
 		{
 			show_board_win(board_win, board, cur_brick, brick_type, x, y);
 			switch(get_key(board_win))
@@ -162,15 +215,19 @@ unsigned int start_game()
 					}
 					break;
 				case 'p':
-					quit = 2;
+					game_state = PAUSED_STATE;
 					show_pause(board_win);
-					quit = 0;
+                    while(old_get_key(board_win) != 'p');
+					game_state = RUNNING_STATE;
 					break;
 				case 'q':
-					quit = 1;
+					game_state = QUIT_STATE;
 					break;
 			}
-			usleep(SPEED_CONST_2 - level * SPEED_CONST_1);
+            tick = SPEED_CONST_2 - level * SPEED_CONST_1;
+            time += tick;
+			show_score(score_win, score, level, time);
+			usleep(tick);
 			if(run > 15)
 			{
 				if(check_brick(board, cur_brick, x, y + 1) == 0)
@@ -182,9 +239,10 @@ unsigned int start_game()
 				{
 					if(y <= 1)
 					{
-						quit = 2;
+						game_state = GAME_OVER_STATE;
 						show_game_over(board_win);
-						quit = 1;
+                        while(old_get_key(board_win) != ' ');
+						game_state = QUIT_STATE;
 					}
 					draw_to_board(board, cur_brick, brick_type, x, y);
 					show_board_win(board_win, board, cur_brick, brick_type, x, y);
@@ -193,7 +251,7 @@ unsigned int start_game()
 					score += level;
 #endif
 					calc_level(score, &level);
-					show_score(score_win, score, level);
+					show_score(score_win, score, level, time);
 					break;
 				}
 			}
@@ -204,7 +262,7 @@ unsigned int start_game()
 	destroy_score_win(score_win);
 	destroy_preview_win(preview_win);
 	destroy_board_win(board_win);
-	if(quit == 1)
+	if(game_state == QUIT_STATE)
 	{
 		if(in_highscore(score) == 0)
 		{
@@ -215,7 +273,9 @@ unsigned int start_game()
 			strncpy(name, "-no-name-", 40);
 		}
 		show_highscore(name);
+    	getch();
 	}
+    engine_stop = true;
 	return score;
 }
 

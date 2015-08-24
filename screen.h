@@ -17,9 +17,10 @@ void show_board_win(WINDOW *, char [BOARD_HEIGHT][BOARD_WIDTH], char [4][4], con
 void show_brick(WINDOW *, char [4][4], const char, const unsigned char, const unsigned char);
 void show_brick_preview(WINDOW *, const char);
 int get_key(WINDOW *);
+void put_key();
 int old_get_key(WINDOW *);
 void show_game_over(WINDOW *);
-void show_score(WINDOW *, const unsigned int, const char);
+void show_score(WINDOW *, const unsigned int, const char, const unsigned long);
 void show_highscore(const char *);
 void read_string(const char *, const char *, char *, const unsigned int);
 void add_user_to_highscore(char *, const unsigned int);
@@ -29,7 +30,7 @@ void show_headline();
 void show_colorized_char(const unsigned char, const unsigned char, const char, const char);
 void show_remove_row(WINDOW *, char [BOARD_HEIGHT][BOARD_WIDTH], const unsigned char);
 void refresh_win(WINDOW *);
-void show_yes_no(WINDOW *, const char);
+void show_yes_no(WINDOW *, const char *, const char);
 char yes_no_question(const char *);
 char play_again();
 

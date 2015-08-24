@@ -33,11 +33,18 @@
 #define BONUS_CONST 100
 #define LEVEL_CONST 300
 
+// below are the states of the game
+#define RUNNING_STATE 0
+#define QUIT_STATE 1
+#define PAUSED_STATE 2
+#define SIGNALED_QUIT_STATE 3
+#define GAME_OVER_STATE 4
+
 void handle_quit_signal(const int);
 unsigned char get_rand(const unsigned char);
 int main(int, char *[]);
 
-char quit, old_style_keys, counterclockwise_rotation, hide_cursor_workaround, highscore_file_path[256], default_name[40];
+char game_state, old_style_keys, counterclockwise_rotation, hide_cursor_workaround, highscore_file_path[256], default_name[40];
 
 unsigned long rseed;
 

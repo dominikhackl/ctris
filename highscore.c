@@ -8,6 +8,7 @@ void init_highscore(struct highscore_struct *highscore)
 	{
 		highscore->entry[i].score = 0;
 		highscore->entry[i].name[0] = '\0';
+		highscore->entry[i].time = 0;
 	}
 }
 
@@ -19,8 +20,13 @@ char read_highscore(struct highscore_struct *highscore)
 		init_highscore(highscore);
 		return 1;
 	}
-	fread(highscore, sizeof(struct highscore_struct), 1, highscore_file);
+	size_t records = fread(highscore, sizeof(struct highscore_struct), 1, highscore_file);
 	fclose(highscore_file);
+    
+    if (records == 0) {
+        return 1;
+    }
+    
 	return 0;
 }
 
@@ -43,6 +49,7 @@ void sort_entries(struct highscore_struct *highscore)
 		memcpy(&sorted_highscore.entry[i], &highscore->entry[highest], sizeof(struct entry_struct));
 		highscore->entry[highest].score = 0;
 		highscore->entry[highest].name[0] = '\0';
+		highscore->entry[highest].time = 0;
 	}
 	memcpy(highscore, &sorted_highscore, sizeof(struct highscore_struct));
 }
@@ -69,6 +76,7 @@ char add_to_highscore(const char *name, const unsigned int score)
 	}
 	read_highscore(&highscore);
 	highscore.entry[9].score = score;
+	highscore.entry[9].time = time(NULL);
 	strncpy(highscore.entry[9].name, name, 40);
 	write_highscore(&highscore);
 	return 0;

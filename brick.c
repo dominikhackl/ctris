@@ -92,7 +92,7 @@ void find_index(char cur_brick[4][4], unsigned char *x, unsigned char *y)
 
 char check_brick(char board[BOARD_HEIGHT][BOARD_WIDTH], char cur_brick[4][4], const unsigned char x, const unsigned char y)
 {
-	unsigned char a, b, t, i, n;
+	unsigned char a = 0, b = 0, t, i, n;
 	if(x >= BOARD_WIDTH || y >= BOARD_HEIGHT)
 	{
 		return 1;
@@ -153,7 +153,7 @@ char check_brick(char board[BOARD_HEIGHT][BOARD_WIDTH], char cur_brick[4][4], co
 
 void draw_to_board(char board[BOARD_HEIGHT][BOARD_WIDTH], char cur_brick[4][4], const char brick_type, const unsigned char x, const unsigned char y)
 {
-	unsigned char a, b, i, n;
+	unsigned char a = 0, b = 0, i, n;
 	if(check_brick(board, cur_brick, x, y) != 0)
 	{
 		return;

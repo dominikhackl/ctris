@@ -7,6 +7,7 @@ struct entry_struct
 {
 	char name[40];
 	unsigned int score;
+	time_t time;
 };
 
 struct highscore_struct

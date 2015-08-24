@@ -4,6 +4,8 @@
 #include "colors.h"
 #include "highscore.h"
 
+int emulated_key = 0;
+
 // workaround for the FreeBSD 4 console to let the cursor disapear
 void hide_cursor(WINDOW *win)
 {
@@ -106,7 +108,7 @@ void destroy_preview_win(WINDOW *win)
 WINDOW *create_score_win()
 {
 	WINDOW *win;
-	win = create_win(12, 12, 9, BOARD_WIDTH * 2 + 2);
+	win = create_win(14, 12, 9, BOARD_WIDTH * 2 + 2);
 	return win;
 }
 
@@ -167,6 +169,7 @@ void show_board_win(WINDOW *win, char board[BOARD_HEIGHT][BOARD_WIDTH], char cur
 		}
 	}
 	show_brick(win, cur_brick, brick_type, x, y);
+    box(win, 0, 0);
 	refresh_win(win);
 }
 
@@ -198,11 +201,23 @@ void show_brick_preview(WINDOW *win, const char brick_type)
 		}
 	}
 	show_brick(win, brick_digit[brick_type - 1], brick_type, 2, 1);
+    box(win, 0, 0);
 }
 
 int get_key(WINDOW *win)
 {
+    if (emulated_key != 0) {
+        int val = emulated_key;
+        emulated_key = 0;
+        return val;
+    }
+    
 	return wgetch(win);
+}
+
+void put_key(int value)
+{
+	emulated_key = value;
 }
 
 int old_get_key(WINDOW *win)
@@ -219,20 +234,27 @@ void show_game_over(WINDOW *win)
 	wattron(win, A_BOLD);
 	mvwprintw(win, (BOARD_HEIGHT / 2) - 1, BOARD_WIDTH - 8, "G A M E   O V E R");
 	wattroff(win, A_BOLD);
-	mvwprintw(win, (BOARD_HEIGHT / 2) + 1, BOARD_WIDTH - 11 , "Press a key to continue!");
+	mvwprintw(win, (BOARD_HEIGHT / 2) + 1, BOARD_WIDTH - 11 , "Press SPACE key to continue!");
 	refresh_win(win);
-	old_get_key(win);
 }
 
-void show_score(WINDOW *win, const unsigned int score, const char level)
+void show_score(WINDOW *win, const unsigned int score, const char level, const unsigned long time)
 {
+        unsigned int hour = (time / 1000000) / 3600;
+        unsigned int min = (time / 1000000) / 60 - hour * 60;
+        unsigned int sec = (time / 1000000) % 60;
+//        unsigned int millis = (time / 1000) % 1000;
 	const int highlight_color = COLOR_RED_FG;
 	mvwprintw(win, 2, 2, "Score:");
-	mvwprintw(win, 7, 2, "Level:");
+	mvwprintw(win, 6, 2, "Level:");
+	mvwprintw(win, 10, 2, "Time:");
 	wattron(win, COLOR_PAIR(highlight_color));
 	mvwprintw(win, 4, 2, "%u", score);
-	mvwprintw(win, 9, 2, "%u", (unsigned int)level);
+	mvwprintw(win, 8, 2, "%u", (unsigned int)level);
+//	mvwprintw(win, 12, 2, "%u:%u:%u.%u", hour, min, sec, millis);
+	mvwprintw(win, 12, 2, "%02u:%02u:%02u", hour, min, sec);
 	wattroff(win, COLOR_PAIR(highlight_color));
+        box(win, 0, 0);
 	refresh_win(win);
 }
 
@@ -252,7 +274,7 @@ void show_highscore(const char *name)
 	const int highlight_color = COLOR_RED_FG;
 	read_highscore(&highscore);
 	clear();
-	win = create_win(16, 43, (HEIGHT / 2) - 8, (WIDTH / 2) - 21);
+	win = create_win(16, 43+14, (HEIGHT / 2) - 8, (WIDTH / 2) - 21 - 14);
 	keypad(win, TRUE);
 	mvwprintw(win, 2, 5, "Highscore:");
 	for(i = 0; i < 10; i++)
@@ -267,12 +289,16 @@ void show_highscore(const char *name)
 		{
 			mvwprintw(win, (int)4 + i, (int)9 + n, ".");
 		}
-		mvwprintw(win, (int)4 + i, 5, "%2u. %s", (unsigned int)i + 1, highscore.entry[i].name);
-		mvwprintw(win, (int)4 + i, 28, "%9u", highscore.entry[i].score);
+        char *time = ctime(&highscore.entry[i].time);
+        if (time != NULL) {
+            time[strlen(time) - 1] = '\0';
+        }
+		mvwprintw(win, (int)4 + i, 5, "%2u. %s [%s] ", (unsigned int)i + 1, highscore.entry[i].name, time);
+		mvwprintw(win, (int)4 + i, 28+14, "%9u", highscore.entry[i].score);
 		snprintf(tmp_string, 9, "%u", highscore.entry[i].score);
 		for(n = 0; n < 9 - strlen(tmp_string); n++)
 		{
-			mvwprintw(win, (int)4 + i, (int)28 + n, ".");
+			mvwprintw(win, (int)4 + i, (int)28 + 14 + n, ".");
 		}
 		if(colorized_row != 0)
 		{
@@ -282,7 +308,6 @@ void show_highscore(const char *name)
 	}
 	refresh_win(win);
 	delwin(win);
-	getch();
 }
 
 void read_string(const char *headline, const char *default_string, char *string, const unsigned int size)
@@ -325,7 +350,6 @@ void show_pause(WINDOW *win)
 	wattroff(win, A_BOLD);
 	mvwprintw(win, (BOARD_HEIGHT / 2) + 1, BOARD_WIDTH - 10, "Press 'p' to continue!");
 	refresh_win(win);
-	while(old_get_key(win) != 'p');
 }
 
 void show_colorized_char(const unsigned char x, const unsigned char y, const char color, const char c)
@@ -368,9 +392,10 @@ void refresh_win(WINDOW *win)
 	wrefresh(win);
 }
 
-void show_yes_no(WINDOW *win, const char cur_marked)
+void show_yes_no(WINDOW *win, const char *question, const char cur_marked)
 {
 	const int highlight_color = COLOR_GREEN_BG;
+    mvwprintw(win, 2, 20 - (strlen(question) / 2), question);
 	if(cur_marked == YES)
 	{
 		wattron(win, COLOR_PAIR(highlight_color));
@@ -389,8 +414,8 @@ void show_yes_no(WINDOW *win, const char cur_marked)
 	{
 		wattroff(win, COLOR_PAIR(highlight_color));
 	}
+    box(win, 0, 0);	
 	refresh_win(win);
-	
 }
 
 char yes_no_question(const char *question)
@@ -400,8 +425,8 @@ char yes_no_question(const char *question)
 	clear();
 	win = create_win(7, 40, (HEIGHT / 2) - 4, (WIDTH / 2) - 20);
 	keypad(win, TRUE);
-	mvwprintw(win, 2, 20 - (strlen(question) / 2), question);
-	show_yes_no(win, cur_marked);
+	wtimeout(win, 0);
+	show_yes_no(win, question, cur_marked);
 	while(run == 0)
 	{
 		switch(get_key(win))
@@ -436,7 +461,7 @@ char yes_no_question(const char *question)
 				run = 1;
 				break;
 		}
-		show_yes_no(win, cur_marked);
+		show_yes_no(win, question, cur_marked);
 	}
 	delwin(win);
 	return cur_marked;

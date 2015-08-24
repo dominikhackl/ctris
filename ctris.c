@@ -2,7 +2,7 @@
 #include "screen.h"
 #include "game.h"
 
-char quit = 0, old_style_keys = 0, counterclockwise_rotation = 0, highscore_file_path[256], default_name[40];
+char game_state = RUNNING_STATE, old_style_keys = 0, counterclockwise_rotation = 0, highscore_file_path[256], default_name[40];
 unsigned long rseed = 1;
 
 #ifndef HIDE_CURSOR_WORKAROUND
@@ -13,12 +13,17 @@ char hide_cursor_workaround = 1;
 
 void handle_quit_signal(const int code)
 {
-	if(quit > 1)
+	if(game_state != RUNNING_STATE && game_state != QUIT_STATE)
 	{
 		restore_screen();
 		exit(0);
 	}
-	quit = 3;
+	game_state = SIGNALED_QUIT_STATE;
+}
+
+void handle_resize_signal(const int code)
+{
+        pause_game();
 }
 
 unsigned char get_rand(const unsigned char i)
@@ -47,7 +52,7 @@ int main(int argc, char *argv[])
 	
 
 	signal(SIGKILL, handle_quit_signal);
-	signal(SIGWINCH, handle_quit_signal);
+	signal(SIGWINCH, handle_resize_signal);
 	signal(SIGTERM, handle_quit_signal);
 	signal(SIGINT, handle_quit_signal);
 	signal(SIGQUIT, handle_quit_signal);
@@ -63,7 +68,7 @@ int main(int argc, char *argv[])
 -i             enable hide cursor workaround\n\
 -r             remove highscore-file\n\
 -c             enable couterclockwise rotation\n");
-				quit = 1;
+				game_state = QUIT_STATE;
 				break;
 			case 'v':
 				printf("\
@@ -72,7 +77,7 @@ ctris %s, built on %s.\n\
 Homepage: http://www.hackl.dhs.org/ctris\n\
 ALL PARTS OF CTRIS ARE UNDER THE TERMS OF GPL. SEE DOCUMENTATION FOR MORE INFO\n\
 ", VERSION, __DATE__);
-				quit = 1;
+				game_state = QUIT_STATE;
 				break;
 			case 'r':
 				printf("removing highscore-file (\"%s\")...", highscore_file_path);
@@ -84,7 +89,7 @@ ALL PARTS OF CTRIS ARE UNDER THE TERMS OF GPL. SEE DOCUMENTATION FOR MORE INFO\n
 				{
 					printf("failed\n");
 				}
-				quit = 1;
+				game_state = QUIT_STATE;
 				break;
 			case 'o':
 				old_style_keys = 1;
@@ -97,7 +102,7 @@ ALL PARTS OF CTRIS ARE UNDER THE TERMS OF GPL. SEE DOCUMENTATION FOR MORE INFO\n
 				break;
 		}
 	}
-	if(quit != 0)
+	if(game_state != RUNNING_STATE)
 	{
 		return 0;
 	}
@@ -108,7 +113,7 @@ ALL PARTS OF CTRIS ARE UNDER THE TERMS OF GPL. SEE DOCUMENTATION FOR MORE INFO\n
 	do
 	{
 		start_game();
-	} while(quit == 1 && play_again() ==  0);
+	} while(game_state == QUIT_STATE && play_again() ==  0);
 	restore_screen();
 	return 0;
 }
