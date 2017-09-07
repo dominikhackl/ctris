@@ -223,9 +223,11 @@ void put_key(int value)
 int old_get_key(WINDOW *win)
 {
 	int retval;
-	notimeout(win, TRUE);
+	//notimeout(win, TRUE);
+	wtimeout(win, -1);
 	retval = get_key(win);
-	notimeout(win, FALSE);
+	//notimeout(win, FALSE);
+	wtimeout(win, 0);
 	return retval;
 }
 
@@ -316,6 +318,7 @@ void read_string(const char *headline, const char *default_string, char *string,
 	clear();
 	win = create_win(7, 60, (HEIGHT / 2) - 4, (WIDTH / 2) - 30);
 	keypad(win, TRUE);
+	wtimeout(win, -1);
 	echo();
 	curs_set(1);
 	mvwprintw(win, 2, 5, "%s (default: %s)", headline, default_name);
@@ -425,7 +428,7 @@ char yes_no_question(const char *question)
 	clear();
 	win = create_win(7, 40, (HEIGHT / 2) - 4, (WIDTH / 2) - 20);
 	keypad(win, TRUE);
-	wtimeout(win, 0);
+	wtimeout(win, -1);
 	show_yes_no(win, question, cur_marked);
 	while(run == 0)
 	{
