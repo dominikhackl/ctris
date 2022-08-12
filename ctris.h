@@ -44,9 +44,9 @@ void handle_quit_signal(const int);
 unsigned char get_rand(const unsigned char);
 int main(int, char *[]);
 
-char game_state, old_style_keys, counterclockwise_rotation, hide_cursor_workaround, highscore_file_path[256], default_name[40];
+extern char game_state, old_style_keys, counterclockwise_rotation, hide_cursor_workaround, highscore_file_path[256], default_name[40];
 
-unsigned long rseed;
+extern unsigned long rseed;
 
 #endif
 
